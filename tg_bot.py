@@ -41,9 +41,9 @@ def start(bot, update):
             except:
                 continue
     if message_info['tgm_entities']:
+        message_info['tgm_url'] = re.search("(?P<url>https?://[^\s]+)", message_info['tgm_caption']).group("url")
+        message_info['tgm_caption'] = message_info['tgm_caption'].replace(message_info["tgm_url"], '')
         message = message_info['tgm_caption']
-        message_info['tgm_url'] = re.search("(?P<url>https?://[^\s]+)", message).group("url")
-        message_info['tgm_caption'] = message.replace(message_info["tgm_url"], '')
     else:
         message = message_info['tgm_caption']
     for url in message_info['tgm_photo_url']:
