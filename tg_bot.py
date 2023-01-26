@@ -51,6 +51,7 @@ def start(bot, update):
     for url in message_info['tgm_video_url']:
         download_file_image(url, message_info)
     upload_vk_photo(upload, message, vk_group_id, vk, message_info)
+    message = None
     tgm_photo_id.clear()
     tgm_video_id.clear()
     tgm_video_url.clear()

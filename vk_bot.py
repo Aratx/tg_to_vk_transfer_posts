@@ -5,7 +5,7 @@ import os
 
 def upload_vk_photo(upload, message, vk_group_id, vk, message_info):
     attachment = []
-    if message_info['tgm_photo_url'] or message_info['tgm_video_url']:
+    if message_info['tgm_photo_url'] or message_info['tgm_video_url'] or message_info['tgm_url']:
         if message_info['tgm_photo_url'] and not message_info['tgm_video_url']:
             files_image = os.listdir(os.path.join('downloads', 'photos'))
             files_path_image = [os.path.join('downloads', 'photos', i) for i in files_image]
@@ -30,9 +30,9 @@ def upload_vk_photo(upload, message, vk_group_id, vk, message_info):
                 video_list = upload.video(file_path_video, group_id=vk_group_id)
                 attachment.append(f'video{video_list["owner_id"]}_{video_list["video_id"]}')
             vk.wall.post(owner_id=f'-{vk_group_id}', message=message, attachment=attachment)
-    if message_info['tgm_url']:
-        attachment = message_info['tgm_url']
-        vk.wall.post(owner_id=f'-{vk_group_id}', message=message, attachment=attachment)
+        else:
+            attachment = message_info['tgm_url']
+            vk.wall.post(owner_id=f'-{vk_group_id}', message=message, attachment=attachment)
     else:
         attachment = None
         vk.wall.post(owner_id=f'-{vk_group_id}', message=message, attachment=attachment)
