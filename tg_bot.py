@@ -91,7 +91,6 @@ if __name__ == '__main__':
     env = Env()
     env.read_env()
     tgm_token = env('TGM_TOKEN')
-    tgm_id = env('TGM_ID')
     vk_token = env('VK_TOKEN')
     vk_group_id = env('VK_GROUP_ID')
     vk_session = vk_api.VkApi(token=vk_token)
