@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  tg_bot:
+    build: .
+    container_name:   tg_bot
+    command: >
+        /bin/sh -c "python3 tg_bot.py"
+    env_file:
+      - ./.env
