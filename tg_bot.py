@@ -51,12 +51,14 @@ def start(bot, update):
     for url in message_info['tgm_video_url']:
         download_file_image(url, message_info)
     upload_vk_photo(upload, message, vk_group_id, vk, message_info)
+    bot.send_message(update.message.chat.id, 'Пост размещщён')
     message = None
     tgm_photo_id.clear()
     tgm_video_id.clear()
     tgm_video_url.clear()
     tgm_photo_url.clear()
     shutil.rmtree('downloads')
+
 
 
 def intercept_message(bot, update):
@@ -74,6 +76,7 @@ def intercept_message(bot, update):
                 tgm_photo_id.append(update.channel_post.photo[-1]['file_id'])
             if update.channel_post.video:
                 tgm_video_id.append(update.channel_post.video['file_id'])
+
     else:
         if update.channel_post.caption:
             message_info['tgm_caption'] = update.channel_post.caption
@@ -85,7 +88,6 @@ def intercept_message(bot, update):
             tgm_video_id.append(update.channel_post.video['file_id'])
         if update.channel_post.entities:
             message_info['tgm_entities'] = update.channel_post.text
-
 
 if __name__ == '__main__':
     env = Env()
