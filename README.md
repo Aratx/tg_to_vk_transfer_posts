@@ -46,7 +46,26 @@ python3 tg_bot.py
 ```Shell
 docker-compose up
 ```
+# Автоматическое включение приложения на Linux
+- Переносите файл `tg_bot.service` в каталог `systemd` путь: `etc/systemd/system`
+- Прописываем его в системе:
+```Shell
+systemctl enable tg_bot
+```
+- Запускаем
+```Shell
+systemctl start tg_bot
+```
+- Проверяем статус:
+```Shell
+systemctl -l status tg_bot
+```
+Если все прошло успешно то увидим:
+![image](https://github.com/AndreyShukatka/Transferring_post_from_telegram_to_VK/assets/106096891/acf5da57-2e7a-4eb7-8843-18baceffaf62)
+
+
 # Работа бота:
 - Пишите пост в Telegramm канале
 - Заходите в бота и пишите комманду `/start`
 - Ваш пост автоматически перемещается в указанную в файле `.env` группу, на стену
+
