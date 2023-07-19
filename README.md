@@ -40,6 +40,10 @@ nano .env
 python3 tg_bot.py
 ```
 ## Запуск Docker
+- Скачать репозиторий проекта:
+```shell
+git clone https://github.com/AndreyShukatka/Transferring_post_from_telegram_to_VK.git
+```
 - Установите Докер, инструкция по [ссылке](https://docs.docker.com/desktop/install/linux-install/)
 - Поместите заполненный файл `.env` в основную директорию
 -  Запустите комманду
