@@ -29,8 +29,8 @@ def download_file_image(url, message_info):
         file.write(response.content)
 
 
-
 def start(bot, update):
+    print(message_info)
     if message_info['tgm_photo_id']:
         for photo_id in message_info['tgm_photo_id']:
             tgm_photo_url.append(bot.get_file(photo_id)['file_path'])
@@ -51,14 +51,14 @@ def start(bot, update):
     for url in message_info['tgm_video_url']:
         download_file_image(url, message_info)
     upload_vk_photo(upload, message, vk_group_id, vk, message_info)
-    bot.send_message(update.message.chat.id, 'Пост размещщён')
     message = None
     tgm_photo_id.clear()
     tgm_video_id.clear()
     tgm_video_url.clear()
     tgm_photo_url.clear()
+    message_info['tgm_caption'] = None
+    bot.send_message(update.message.chat.id, 'Пост размещщён')
     shutil.rmtree('downloads')
-
 
 
 def intercept_message(bot, update):
@@ -88,6 +88,7 @@ def intercept_message(bot, update):
             tgm_video_id.append(update.channel_post.video['file_id'])
         if update.channel_post.entities:
             message_info['tgm_entities'] = update.channel_post.text
+
 
 if __name__ == '__main__':
     env = Env()
