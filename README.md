@@ -39,7 +39,7 @@ nano .env
 ```Shell
 python3 tg_bot.py
 ```
-#Установка и запуск с Docker
+# Установка и запуск с Docker
 - Скачать репозиторий проекта:
 ```shell
 git clone https://github.com/AndreyShukatka/Transferring_post_from_telegram_to_VK.git
