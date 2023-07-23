@@ -1,0 +1,11 @@
+[Unit]
+Description=Telegramm бот для стаса
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/Transferring_post_from_telegram_to_VK
+ExecStart=docker-compose up
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
