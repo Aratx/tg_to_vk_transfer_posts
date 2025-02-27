@@ -1,14 +1,13 @@
 import os
 import pathlib
+import re
 import shutil
 from urllib.parse import urlsplit
-from environs import Env
-import re
 
-import vk_api
 import requests
+import vk_api
+from environs import Env
 from telegram.ext import Updater, Filters, MessageHandler, CommandHandler
-
 from vk_bot import upload_vk_photo
 
 
@@ -41,7 +40,7 @@ def start(bot, update):
             except:
                 continue
     if message_info['tgm_entities']:
-        message_info['tgm_url'] = re.search("(?P<url>https?://[^\s]+)", message_info['tgm_caption']).group("url")
+        message_info['tgm_url'] = re.search(r"(?P<url>https?://[^\s]+)", message_info['tgm_caption']).group("url")
         message_info['tgm_caption'] = message_info['tgm_caption'].replace(message_info["tgm_url"], '')
         message = message_info['tgm_caption']
     else:
@@ -62,6 +61,7 @@ def start(bot, update):
 
 
 def intercept_message(bot, update):
+    print(update)
     if update.channel_post['media_group_id']:
         if update.channel_post.caption:
             message_info['tgm_caption'] = update.channel_post.caption
