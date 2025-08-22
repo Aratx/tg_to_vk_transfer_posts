@@ -1,5 +1,5 @@
 [Unit]
-Description=Telegramm бот для стаса
+Description=Telegramm бот
 
 [Service]
 Type=simple

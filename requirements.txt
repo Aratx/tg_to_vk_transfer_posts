@@ -1,6 +1,6 @@
-environs==9.5.0
-python_telegram_bot==11.1.0
-requests==2.32.0
+environs==11.0.0
+python-telegram-bot==21.0.1
+requests==2.31.0
 telegram==0.0.1
 vk_api==11.9.9
 #standard-imghdr==3.13.0

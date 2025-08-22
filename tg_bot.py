@@ -7,7 +7,9 @@ from urllib.parse import urlsplit
 import requests
 import vk_api
 from environs import Env
-from telegram.ext import Updater, Filters, MessageHandler, CommandHandler
+from telegram import Update
+from telegram.ext import Application, MessageHandler, CommandHandler, ContextTypes
+from telegram.ext import filters
 from vk_bot import upload_vk_photo
 
 
@@ -28,66 +30,146 @@ def download_file_image(url, message_info):
         file.write(response.content)
 
 
-def start(bot, update):
-    print(message_info)
+async def publish_to_vk(context: ContextTypes.DEFAULT_TYPE, message_info):
+    """Функция для публикации в VK"""
+    print("=== PUBLISHING TO VK ===")
+    print(f"Message info: {message_info}")
+    
+    # Проверяем, есть ли контент для отправки
+    has_content = (message_info['tgm_photo_id'] or 
+                  message_info['tgm_video_id'] or 
+                  message_info['tgm_caption'])
+    
+    if not has_content:
+        print('Нет контента для публикации')
+        return
+
+    # Обрабатываем текст с ссылками
+    final_message = extract_links_from_message(message_info['tgm_caption'], message_info['tgm_entities'])
+    
+    # Получаем URL файлов
     if message_info['tgm_photo_id']:
         for photo_id in message_info['tgm_photo_id']:
-            tgm_photo_url.append(bot.get_file(photo_id)['file_path'])
+            try:
+                photo_file = await context.bot.get_file(photo_id)
+                message_info['tgm_photo_url'].append(photo_file.file_path)
+            except Exception as e:
+                print(f"Error getting photo file: {e}")
+    
     if message_info['tgm_video_id']:
         for video_id in message_info['tgm_video_id']:
             try:
-                tgm_video_url.append(bot.get_file(video_id).file_path)
-            except:
-                continue
-    if message_info['tgm_entities']:
-        message_info['tgm_url'] = re.search(r"(?P<url>https?://[^\s]+)", message_info['tgm_caption']).group("url")
-        message_info['tgm_caption'] = message_info['tgm_caption'].replace(message_info["tgm_url"], '')
-        message = message_info['tgm_caption']
-    else:
-        message = message_info['tgm_caption']
+                video_file = await context.bot.get_file(video_id)
+                message_info['tgm_video_url'].append(video_file.file_path)
+            except Exception as e:
+                print(f"Error getting video file: {e}")
+    
+    # Если сообщение пустое после обработки, устанавливаем None
+    if not final_message or not final_message.strip():
+        final_message = None
+
+    # Скачиваем файлы
     for url in message_info['tgm_photo_url']:
         download_file_image(url, message_info)
     for url in message_info['tgm_video_url']:
         download_file_image(url, message_info)
-    upload_vk_photo(upload, message, vk_group_id, vk, message_info)
-    message = None
-    tgm_photo_id.clear()
-    tgm_video_id.clear()
-    tgm_video_url.clear()
-    tgm_photo_url.clear()
-    message_info['tgm_caption'] = None
-    bot.send_message(update.message.chat.id, 'Пост размещщён')
-    shutil.rmtree('downloads')
+    
+    # Публикуем в VK
+    if message_info['tgm_photo_url'] or message_info['tgm_video_url'] or final_message:
+        try:
+            upload_vk_photo(upload, final_message, vk_group_id, vk, message_info)
+            print('Пост размещён в VK')
+        except Exception as e:
+            print(f"Ошибка при публикации в VK: {e}")
+    else:
+        print('Нет контента для публикации')
+    
+    # Удаляем временные файлы
+    if os.path.exists('downloads'):
+        shutil.rmtree('downloads')
 
 
-def intercept_message(bot, update):
+def extract_links_from_message(text, entities):
+    """Извлекает ссылки и возвращает текст с ссылками в конце соответствующих фраз"""
+    if not text or not entities:
+        return text
+    
+    # Сортируем entities по offset в обратном порядке, чтобы не сбивать индексы при вставке
+    sorted_entities = sorted(entities, key=lambda x: x.offset, reverse=True)
+    
+    result_text = text
+    
+    for entity in sorted_entities:
+        if entity.type == "text_link" and entity.url:
+            # Находим позицию конца текста ссылки
+            end_pos = entity.offset + entity.length
+            # Вставляем URL после текста ссылки
+            result_text = result_text[:end_pos] + f" {entity.url}" + result_text[end_pos:]
+    
+    return result_text
+
+
+async def intercept_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("=== NEW MESSAGE IN CHANNEL ===")
     print(update)
-    if update.channel_post['media_group_id']:
-        if update.channel_post.caption:
-            message_info['tgm_caption'] = update.channel_post.caption
-        if message_info['tgm_media_group_id'] == update.channel_post['media_group_id']:
-            if update.channel_post.photo:
-                tgm_photo_id.append(update.channel_post.photo[-1]['file_id'])
-            if update.channel_post.video:
-                tgm_video_id.append(update.channel_post.video['file_id'])
+    
+    # Проверяем, есть ли channel_post в update
+    if not update.channel_post:
+        return
+    
+    post = update.channel_post
+    
+    # Создаем новую структуру данных для каждого сообщения
+    current_message_info = {
+        'tgm_media_group_id': None,
+        'tgm_photo_id': [],
+        'tgm_video_id': [],
+        'tgm_photo_url': [],
+        'tgm_video_url': [],
+        'tgm_caption': None,
+        'tgm_entities': None,
+        'tgm_url': None
+    }
+    
+    # Проверяем media_group_id (если есть)
+    if hasattr(post, 'media_group_id') and post.media_group_id:
+        if post.caption:
+            current_message_info['tgm_caption'] = post.caption
+            current_message_info['tgm_entities'] = post.caption_entities
+        
+        if current_message_info['tgm_media_group_id'] == post.media_group_id:
+            if post.photo:
+                current_message_info['tgm_photo_id'].append(post.photo[-1].file_id)
+            if post.video:
+                current_message_info['tgm_video_id'].append(post.video.file_id)
         else:
-            message_info['tgm_media_group_id'] = update.channel_post['media_group_id']
-            if update.channel_post.photo:
-                tgm_photo_id.append(update.channel_post.photo[-1]['file_id'])
-            if update.channel_post.video:
-                tgm_video_id.append(update.channel_post.video['file_id'])
+            current_message_info['tgm_media_group_id'] = post.media_group_id
+            if post.photo:
+                current_message_info['tgm_photo_id'].append(post.photo[-1].file_id)
+            if post.video:
+                current_message_info['tgm_video_id'].append(post.video.file_id)
 
     else:
-        if update.channel_post.caption:
-            message_info['tgm_caption'] = update.channel_post.caption
-        else:
-            message_info['tgm_caption'] = update.channel_post.text
-        if update.channel_post.photo:
-            tgm_photo_id.append(update.channel_post.photo[-1]['file_id'])
-        if update.channel_post.video:
-            tgm_video_id.append(update.channel_post.video['file_id'])
-        if update.channel_post.entities:
-            message_info['tgm_entities'] = update.channel_post.text
+        # Обрабатываем одиночные сообщения
+        if post.caption:
+            current_message_info['tgm_caption'] = post.caption
+            current_message_info['tgm_entities'] = post.caption_entities
+        elif post.text:
+            current_message_info['tgm_caption'] = post.text
+            current_message_info['tgm_entities'] = post.entities
+        
+        if post.photo:
+            current_message_info['tgm_photo_id'].append(post.photo[-1].file_id)
+        if post.video:
+            current_message_info['tgm_video_id'].append(post.video.file_id)
+    
+    # Немедленно публикуем в VK
+    await publish_to_vk(context, current_message_info)
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Команда /start для ручного управления"""
+    await update.message.reply_text('Бот запущен и слушает канал. Новые сообщения будут автоматически публиковаться в VK.')
 
 
 if __name__ == '__main__':
@@ -99,23 +181,14 @@ if __name__ == '__main__':
     vk_session = vk_api.VkApi(token=vk_token)
     vk = vk_session.get_api()
     upload = vk_api.upload.VkUpload(vk_session)
-    tgm_photo_id = []
-    tgm_video_id = []
-    tgm_photo_url = []
-    tgm_video_url = []
-    message_info = {
-        'tgm_media_group_id': None,
-        'tgm_photo_id': tgm_photo_id,
-        'tgm_video_id': tgm_video_id,
-        'tgm_photo_url': tgm_photo_url,
-        'tgm_video_url': tgm_video_url,
-        'tgm_caption': None,
-        'tgm_entities': None,
-        'tgm_url': None
-    }
-    updater = Updater(tgm_token)
-    dispatcher = updater.dispatcher
-    dispatcher.add_handler(CommandHandler('start', start))
-    dispatcher.add_handler(MessageHandler(Filters.all, intercept_message))
-    updater.start_polling()
-    updater.idle()
+    
+    # Создаем Application вместо Updater
+    application = Application.builder().token(tgm_token).build()
+    
+    # Добавляем обработчики
+    application.add_handler(CommandHandler('start', start))
+    application.add_handler(MessageHandler(filters.ALL, intercept_message))
+    
+    print("Бот запущен и слушает канал...")
+    # Запускаем бота
+    application.run_polling()
