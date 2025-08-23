@@ -3,10 +3,10 @@
 
 Бот умеет принимать разные посты из Телеграма (ссылки, фотографии, видео, описания) и транслирует их в указанную группу ВК
 # Установка без докера
-- Установить `Python 3.10`
+- Установить `Python 3.12`
 - Скачать репозиторий проекта:
 ```shell
-git clone https://github.com/AndreyShukatka/Transferring_post_from_telegram_to_VK.git
+git clone https://github.com/Aratx/tg_to_vk_transfer_posts
 ```
 - Создайте и активируйте виртуальное окружение в корневой папке проекта:
 ```shell
@@ -27,11 +27,7 @@ nano .env
 - В качестве типа приложения ВК следует указать `standalone` — это подходящий тип для приложений, которые просто запускаются на компьютере.
 - Получите `client_id` созданного приложения. Если нажать на кнопку `Редактировать` для нового приложения, в адресной строке вы увидите его `client_id`
 - Узнать `group_id` можно по [этой ссылке](https://regvk.com/id/)
-- Заполняем .env, VK_TOKEN оставляем пустым
-- Запускаем get_vk_token.py, получаем ссылку и переходим по ней
-- Если все верно заполнили. то видим надпись : Пожалуйста, не копируйте данные из адресной строки для сторонних сайтов. Таким образом Вы можете потерять доступ к Вашему аккаунту.
-- Из ссылки копируем сам токен: https://oauth.vk.com/blank.html#access_token=vk1.a.jqZZ_Ckl9eLGaZyKfMdkrp_1R51U75nRhhZ9B-hd3oJIcF-MgeV1Yh-Bww5CeBE7KE6XCjvPdvNO4jfQwrbry5jCt4ZsBszQyPahKIigIsYhGO7hgw328gkxfONfy0IwMfOd9uaLef4sNE0bjmEYcAIGLNdOTidih7_89RW67H7FK-lK0oljYQQ&expires_in=0&user_id=3251639
-- Из этой ссылки и копируем VK_TOKEN = vk1.a.jqZZ_CkF1Ql9eLGaZyKfMdkrp_1R51U75nRhhZ9B-hd3oJIcFuPiS1ZcZCvzacmJF-MgeV1Yh-Bww5C7KE6XCjvPdvNO4jfQwrbry5jCt4ZsBszQyPahKIigIsYhGO7hgw328gkxfONfy0IwMfOd9uaLef4sNE0bjmEYcAIGLNdOTidih7_89RW67H7FK-lK0oljYQQ
+- Заполняем .env
 ### Заполнение файла `.env`
 - TGM_TOKEN = тут указывается токен вашего телеграм бота [Иснтрукция по получению](https://way23.ru/регистрация-бота-в-telegram.html)
 - TGM_ID = Указываем ID канала, с которого нужно пересылать сообщения
@@ -39,7 +35,7 @@ nano .env
 - VK_GROUP_ID = id вашей группы, который вы получили выше
 - VK_CLIENT_SECRET = Защищённый ключ вашего приложения, находится в настройках приложения ВК `Сервисный ключ доступа`
 - VK_APP_CLIENT_ID = id вашего приложения, который вы получили выше, указывается без знака `-` В начале
-- VK_TOKEN = токен, который мы получаем из get_vk_token.py
+- VK_TOKEN = токен, который мы получаем из https://vkhost.github.io/
 # Запуск
 ## Запускается коммандой
 ```Shell
@@ -48,7 +44,7 @@ python3 tg_bot.py
 # Установка и запуск с Docker
 - Скачать репозиторий проекта:
 ```shell
-git clone https://github.com/AndreyShukatka/Transferring_post_from_telegram_to_VK.git
+git clone https://github.com/Aratx/tg_to_vk_transfer_posts
 ```
 - Установите Докер, инструкция по [ссылке](https://docs.docker.com/desktop/install/linux-install/)
 - Поместите заполненный файл `.env` в основную директорию
