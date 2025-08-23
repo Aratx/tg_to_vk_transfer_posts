@@ -3,6 +3,8 @@ import pathlib
 import re
 import shutil
 from urllib.parse import urlsplit
+from collections import defaultdict
+import asyncio
 
 import requests
 import vk_api
@@ -12,11 +14,13 @@ from telegram.ext import Application, MessageHandler, CommandHandler, ContextTyp
 from telegram.ext import filters
 from vk_bot import upload_vk_photo
 
+# Глобальная переменная для хранения медиагрупп
+media_groups = defaultdict(dict)
+media_groups_lock = asyncio.Lock()
 
 def extract_file_extension(url):
     path, filename_tail = os.path.split(urlsplit(url).path)
     return filename_tail, path.split('/')[-1]
-
 
 def download_file_image(url, message_info):
     filename_tail, path = extract_file_extension(url)
@@ -28,7 +32,6 @@ def download_file_image(url, message_info):
     response = requests.get(url)
     with open(directory, 'wb') as file:
         file.write(response.content)
-
 
 async def publish_to_vk(context: ContextTypes.DEFAULT_TYPE, message_info):
     """Функция для публикации в VK"""
@@ -88,7 +91,6 @@ async def publish_to_vk(context: ContextTypes.DEFAULT_TYPE, message_info):
     if os.path.exists('downloads'):
         shutil.rmtree('downloads')
 
-
 def extract_links_from_message(text, entities):
     """Извлекает ссылки и возвращает текст с ссылками в конце соответствующих фраз"""
     if not text or not entities:
@@ -108,6 +110,21 @@ def extract_links_from_message(text, entities):
     
     return result_text
 
+async def process_media_group(media_group_id, context):
+    """Обрабатывает всю медиагруппу после получения всех элементов"""
+    async with media_groups_lock:
+        group_data = media_groups.get(media_group_id)
+        if not group_data:
+            return
+        
+        # Ждем немного чтобы все медиа успели прийти
+        await asyncio.sleep(2)
+        
+        # Публикуем всю группу
+        await publish_to_vk(context, group_data)
+        
+        # Удаляем обработанную группу
+        del media_groups[media_group_id]
 
 async def intercept_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("=== NEW MESSAGE IN CHANNEL ===")
@@ -119,7 +136,7 @@ async def intercept_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     post = update.channel_post
     
-    # Создаем новую структуру данных для каждого сообщения
+    # Создаем структуру данных для сообщения
     current_message_info = {
         'tgm_media_group_id': None,
         'tgm_photo_id': [],
@@ -133,21 +150,32 @@ async def intercept_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Проверяем media_group_id (если есть)
     if hasattr(post, 'media_group_id') and post.media_group_id:
+        media_group_id = post.media_group_id
+        current_message_info['tgm_media_group_id'] = media_group_id
+        
         if post.caption:
             current_message_info['tgm_caption'] = post.caption
             current_message_info['tgm_entities'] = post.caption_entities
         
-        if current_message_info['tgm_media_group_id'] == post.media_group_id:
+        # Добавляем медиа в группу
+        async with media_groups_lock:
+            if media_group_id not in media_groups:
+                media_groups[media_group_id] = current_message_info.copy()
+            
+            group_data = media_groups[media_group_id]
+            
             if post.photo:
-                current_message_info['tgm_photo_id'].append(post.photo[-1].file_id)
+                group_data['tgm_photo_id'].append(post.photo[-1].file_id)
             if post.video:
-                current_message_info['tgm_video_id'].append(post.video.file_id)
-        else:
-            current_message_info['tgm_media_group_id'] = post.media_group_id
-            if post.photo:
-                current_message_info['tgm_photo_id'].append(post.photo[-1].file_id)
-            if post.video:
-                current_message_info['tgm_video_id'].append(post.video.file_id)
+                group_data['tgm_video_id'].append(post.video.file_id)
+            
+            # Сохраняем caption только из первого сообщения группы
+            if post.caption and not group_data['tgm_caption']:
+                group_data['tgm_caption'] = post.caption
+                group_data['tgm_entities'] = post.caption_entities
+        
+        # Запускаем обработку группы с задержкой
+        asyncio.create_task(process_media_group(media_group_id, context))
 
     else:
         # Обрабатываем одиночные сообщения
@@ -162,15 +190,13 @@ async def intercept_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             current_message_info['tgm_photo_id'].append(post.photo[-1].file_id)
         if post.video:
             current_message_info['tgm_video_id'].append(post.video.file_id)
-    
-    # Немедленно публикуем в VK
-    await publish_to_vk(context, current_message_info)
-
+        
+        # Немедленно публикуем одиночные сообщения
+        await publish_to_vk(context, current_message_info)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Команда /start для ручного управления"""
     await update.message.reply_text('Бот запущен и слушает канал. Новые сообщения будут автоматически публиковаться в VK.')
-
 
 if __name__ == '__main__':
     env = Env()
