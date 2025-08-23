@@ -3,7 +3,7 @@ Description=Telegramm бот
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/Transferring_post_from_telegram_to_VK
+WorkingDirectory=/opt/tg_to_vk_transfer_posts
 ExecStart=docker-compose up
 Restart=always
 
