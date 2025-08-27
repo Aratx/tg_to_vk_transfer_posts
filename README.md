@@ -28,8 +28,8 @@ nano .env
 ### Заполнение файла `.env`
 - TGM_TOKEN = тут указывается токен вашего телеграм бота [Иснтрукция по получению](https://way23.ru/регистрация-бота-в-telegram.html)
 - TGM_ID = Указываем ID канала, с которого нужно пересылать сообщения
-- VK_GROUP_ID = id вашей группы, который вы получили выше
-- VK_TOKEN = Acess токен(VK Admin), который мы получаем тут https://vkhost.github.io/
+- VK_GROUP_ID = id вашей группы VK
+- VK_TOKEN = Acces токен(VK Admin), который мы получаем тут https://vkhost.github.io/
 # Запуск
 ## Запускается коммандой
 ```Shell
@@ -60,12 +60,8 @@ systemctl start tg_bot
 ```Shell
 systemctl -l status tg_bot
 ```
-Если все прошло успешно то увидим:
-![image](https://github.com/AndreyShukatka/Transferring_post_from_telegram_to_VK/assets/106096891/acf5da57-2e7a-4eb7-8843-18baceffaf62)
-
-
 # Работа бота:
 - Добавляете бота в Telegram канал с правами администратора
 - Пишите пост в Telegram канале
-- Ваш пост автоматически перемещается в указанную в файле `.env` группу, на стену
+- Ваш пост автоматически перемещается в указанную в файле `.env` группу VK, на стену
 
