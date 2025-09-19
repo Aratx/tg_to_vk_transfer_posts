@@ -25,7 +25,8 @@ def upload_vk_photo(upload, message, vk_group_id, vk, message_info):
             vk.wall.post(
                 owner_id=f'-{vk_group_id}', 
                 message=message, 
-                attachment=','.join(attachment)
+                attachment=','.join(attachment),
+                from_group=1
             )
             print(f"Опубликован пост с {len(attachment)} вложениями")
         else:
